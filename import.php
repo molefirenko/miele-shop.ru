@@ -1,18 +1,5 @@
 <?php
-/*
-        ◦ Холодильники
-        ◦ Вытяжки
-        ◦ Сушильные машины
-        ◦ Стиральные машины
-        ◦ Кофемашины
-        ◦ Посудомойки
-        ◦ Гладильные системы
-        ◦ Духовые шкафы
-        ◦ Микроволновые печи
-        ◦ Варочные панели
-        ◦ Пароварки
-        ◦ Стиральные машины с сушкой
-*/
+
 $names = array(
     'Холодильники',
     'Вытяжки',
@@ -41,6 +28,8 @@ curl_close($ch);
 
 $xml = simplexml_load_string($retValue);
 
+$cat_ids = array();
+
 foreach ($xml->shop->categories->category as $category) {
     if (isset($category['parentId'])) {
         continue;
@@ -48,8 +37,17 @@ foreach ($xml->shop->categories->category as $category) {
     if (!in_array($category[0],$names)) {
         continue;
     }
-    print($category['id']);
-    print(' - ');
-    print($category[0]);
-    print(PHP_EOL);
+    $cat_ids[] = (string)$category['id'];
+}
+
+$products = array();
+
+foreach ($xml->shop->offers->offer as $offer) {
+    if (in_array($offer->categoryId,$cat_ids)) {
+        $products[] = $offer;
+    }
+}
+
+foreach ($products as $product) {
+    echo $product->model.PHP_EOL;
 }
