@@ -25,6 +25,8 @@ class ImportXml {
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION,1);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
         curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         $retValue = curl_exec($ch);          
         curl_close($ch);
         return $retValue;       
@@ -51,27 +53,92 @@ class ImportXml {
         }
         $count = 0;
         $products = array();
+        $products[] = array(
+            'ID',
+            'Активен',
+            'Имя',
+            'Категория',
+            'Цена',
+            'Отображать цену',
+            'Бренд',
+            'Штрихкод',
+            'Сводка',
+            'Описание',
+            'URL изображений',
+        );
+        $pid = 1;
         foreach ($xml->shop->offers->offer as $offer) {
             if ($offer['available'] == false) continue;
             $catId = $offer->categoryId;
+            $catName = '';
             $skip = true;
             foreach ($categories as $category) {
                 if (in_array($catId,$category['ids'])) {
                     $skip = false;
+                    $catName = $category['name'];
                 }
+
             }
             if ($skip) continue;
-            $products[] = 
+
+            $params = array();
+            $description = '';
+            foreach ($offer->param as $param) {
+                if (strpos($param['name'],'Описание') !== false) {
+                    $description = (string)$param;
+                }
+            }
+
+            $pictures = array();
+            foreach($offer->picture as $picture) {
+                $pictures[] = (string)$picture;
+            } 
+            
+            $products[] = array(
+                $pid,
+                1,
+                (string)$offer->model,
+                $catName,
+                (int)$offer->price,
+                1,
+                (string)$offer->vendor,
+                (int)$offer->barcode,
+                (string)$offer->description,
+                $description,
+                implode(',',$pictures),
+            );
+            
+            $pid++;
             $count++;
 
         }
-        print($count);
+        return $products;
+    }
+
+    public function create_file($data) {
+        $date = new DateTime();
+        $filename = 'miele'.$date->format('Ymd').'.csv';
+        $file = fopen($filename,'w');
+        foreach ($data as $row) {
+            fputcsv($file,$row,';');
+        }
+
+        fclose($file);
+    }
+
+    public function scr_output($data) {
+        foreach ($data as $single) {
+            print_r($single);
+            break;
+        }
     }
 
     public function run_parser() {
         $data = $this->get_data();
-        $this->parse_xml($data);
-
+        $products = $this->parse_xml($data);
+        $this->create_file($products);
+        // $this->scr_output($products);
+        echo 'End'.PHP_EOL;
     }
 }
 
