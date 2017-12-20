@@ -103,7 +103,7 @@ class ImportXml {
                 1,
                 (string)$offer->vendor,
                 (int)$offer->barcode,
-                (string)$offer->description,
+                str_replace(',','<br>',(string)$offer->description),
                 $description,
                 implode(',',$pictures),
             );
